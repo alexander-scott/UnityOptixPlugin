@@ -1,0 +1,10 @@
+E:\virtenv_unityproject\virtenv_unityproject\Assets\Binaries\World.OpenDrive.dll
+E:\virtenv_unityproject\virtenv_unityproject\Assets\Binaries\World.OpenDrive.pdb
+E:\virtenv_unityproject\virtenv_unityproject\Source\Runtime\World\OpenDrive\OpenDrive\obj\Windows64\Debug\OpenDrive.csprojResolveAssemblyReference.cache
+E:\virtenv_unityproject\virtenv_unityproject\Source\Runtime\World\OpenDrive\OpenDrive\obj\Windows64\Debug\World.OpenDrive.dll
+E:\virtenv_unityproject\virtenv_unityproject\Source\Runtime\World\OpenDrive\OpenDrive\obj\Windows64\Debug\World.OpenDrive.pdb
+E:\Documents\VirtEnv\virtenv_unityproject\virtenv_unityproject\Assets\Binaries\World.OpenDrive.dll
+E:\Documents\VirtEnv\virtenv_unityproject\virtenv_unityproject\Assets\Binaries\World.OpenDrive.pdb
+E:\Documents\VirtEnv\virtenv_unityproject\virtenv_unityproject\Source\Runtime\World\OpenDrive\OpenDrive\obj\Windows64\Debug\OpenDrive.csprojResolveAssemblyReference.cache
+E:\Documents\VirtEnv\virtenv_unityproject\virtenv_unityproject\Source\Runtime\World\OpenDrive\OpenDrive\obj\Windows64\Debug\World.OpenDrive.dll
+E:\Documents\VirtEnv\virtenv_unityproject\virtenv_unityproject\Source\Runtime\World\OpenDrive\OpenDrive\obj\Windows64\Debug\World.OpenDrive.pdb
