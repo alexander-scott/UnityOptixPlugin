@@ -1,5 +1,0 @@
-E:\Documents\ASTAS_OPTIX\virtenv_unityproject\Assets\Binaries\World.Optix.dll
-E:\Documents\ASTAS_OPTIX\virtenv_unityproject\Assets\Binaries\World.Optix.pdb
-E:\Documents\UnityOptixPlugin\UnityOptix\obj\Editor_Windows64\Debug\UnityOptix.csprojResolveAssemblyReference.cache
-E:\Documents\UnityOptixPlugin\UnityOptix\obj\Editor_Windows64\Debug\World.Optix.dll
-E:\Documents\UnityOptixPlugin\UnityOptix\obj\Editor_Windows64\Debug\World.Optix.pdb

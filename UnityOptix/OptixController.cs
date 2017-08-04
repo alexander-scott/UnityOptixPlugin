@@ -6,15 +6,7 @@ using UnityEngine;
 
 namespace World.Optix
 {
-    // DONE -- Fire rays at every angle across the camera frustum
-    // DONE -- Setting radius below 30 results in a corrupted heap WTF
-    // DONE -- Implement options for selecting which gameobjects are included
-    // DONE -- Implement distance based culling for the transforms
-    // DONE -- Add additional usability e.g. Check single ray hit, return single ray hit pos, check mouse click hit, return hits count
-    // DONE -- Only ray trace if an object has moved or the sensor has moved
-    // DONE -- Preload the rays in like the matrices and transforms and only update if a sensor changes
-    // TODO -- Build up a scene demonstrating functionality
-    // TODO -- Rename project and put in seperate build
+    // TODO -- Do not regenerate rays if sensor transform has changed. Rather translate them using their localToWorld matrix
     // TODO -- Investigate rendering point cloud within C++ Plugin using D3D11 buffers
     // TODO -- Investigate CUDA implementation
 
@@ -134,24 +126,27 @@ namespace World.Optix
         // Sends the address of every cached meshes vertex buffer as well as localToWorld transform matrix to the Optix library
         private void SendAllObjectsToOptix()
         {
-            GCHandle[] meshGCHandles = new GCHandle[optixTransforms.Length]; // GCHandle is needed to find the memory address of the meshes vertices without doing an expensive copy
-
-            IntPtr[] meshVertexAddresses = new IntPtr[optixTransforms.Length]; // The array pointer to the memory address of the verts
-            Matrix4x4[] meshTranslationMatrices = new Matrix4x4[optixTransforms.Length]; // The local to world matrix of each OptixTransform
-
-            int[] meshVertexCounts = new int[optixTransforms.Length]; // The number of vertices in the mesh
-
-            int[] meshEnabledStatus = new int[optixTransforms.Length]; // The enabled status of each gameobject (is it within the required distance or not)
+            GCHandle[] meshGCHandles = new GCHandle[optixTransforms.Length]; 
+            IntPtr[] meshVertexAddresses = new IntPtr[optixTransforms.Length]; 
+            Matrix4x4[] meshTranslationMatrices = new Matrix4x4[optixTransforms.Length]; 
+            int[] meshVertexCounts = new int[optixTransforms.Length]; 
+            int[] meshEnabledStatus = new int[optixTransforms.Length]; 
 
             for (int iTransform = 0; iTransform < optixTransforms.Length; iTransform++)
             {
+                // GCHandle is needed to find the memory address of the meshes vertices without doing an expensive copy
                 meshGCHandles[iTransform] = GCHandle.Alloc(optixTransforms[iTransform].mesh.vertices, GCHandleType.Pinned);
 
+                // The array pointer to the memory address of the verts
                 meshVertexAddresses[iTransform] = meshGCHandles[iTransform].AddrOfPinnedObject();
+
+                // The local to world matrix of each OptixTransform
                 meshTranslationMatrices[iTransform] = optixTransforms[iTransform].transform.localToWorldMatrix;
 
+                // The number of vertices in the mesh
                 meshVertexCounts[iTransform] = optixTransforms[iTransform].mesh.vertexCount;
 
+                // The enabled status of each gameobject (is it within the required distance or not)
                 optixTransforms[iTransform].isEnabled = CheckIfTransformIsEnabled(optixTransforms[iTransform].transform);
                 meshEnabledStatus[iTransform] = optixTransforms[iTransform].isEnabled;
             }
@@ -425,10 +420,9 @@ namespace World.Optix
                 optixPointCloud.UpdatePositions(returnHitPositions, returnHitPositionCount);
             }
         }
+#endregion
 
-        #endregion
-
-        #region Helpers
+#region Helpers
 
         private OptixSensorBase[] GetBaseValuesFromSensors(OptixSensor[] sensors)
         {
@@ -442,7 +436,7 @@ namespace World.Optix
             return baseSensors;
         }
 
-        #endregion
+#endregion
 
         private IEnumerator CallPluginAtEndOfFrames()
         {

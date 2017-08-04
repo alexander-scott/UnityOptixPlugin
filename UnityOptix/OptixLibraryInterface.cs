@@ -23,32 +23,71 @@ namespace World.Optix
     /// </summary>
     public class OptixLibraryInterface : SafeHandleZeroOrMinusOneIsInvalid
     {
-        [DllImport("unityOptixPlugin", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetAllObjectsFromUnity(int totalMeshes, int[] vertexCount, IntPtr[] sourceVertices, Matrix4x4[] transformationMatrices, int[] transformEnabled);
+        #region Set data in plugin
 
         [DllImport("unityOptixPlugin", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SetAllSensorsFromUnity(int totalSensors, OptixSensorBase[] sensors);
-
-        [DllImport("unityOptixPlugin", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        public static unsafe extern bool SensorFireAndReturnHitPositions(out OptixLibraryInterface optixLibraryHandle, out Vector3* hitPositions, out int hitPositionCount);
-
-        [DllImport("unityOptixPlugin", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool SensorFireAndReturnHitCount(out int hitPositionCount);
-
-        [DllImport("unityOptixPlugin", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool CheckSingleRayHit(Vector3 origin, Vector3 direction, float depth);
-
-        [DllImport("unityOptixPlugin", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern Vector3 ReturnSingleRayHit(Vector3 origin, Vector3 direction, float depth);
-
-        [DllImport("unityOptixPlugin", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
-        public static unsafe extern bool ReleaseItems(IntPtr optixLibraryHandle);
+        public static extern void SetAllObjectsFromUnity
+        (
+            int totalMeshes, int[] vertexCount, IntPtr[] sourceVertices, Matrix4x4[] transformationMatrices, int[] transformEnabled
+        );
 
         [DllImport("unityOptixPlugin", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void UpdateMatrices(int matrixCount, int[] matrixIndices, Matrix4x4[] transformationMatrices);
+        public static extern void SetAllSensorsFromUnity
+        (
+            int totalSensors, OptixSensorBase[] sensors
+        );
 
         [DllImport("unityOptixPlugin", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void UpdateTransformEnabled(int transformCount, int[] transformIndices, int[] transformEnabled);
+        public static extern void UpdateMatrices
+        (
+            int matrixCount, int[] matrixIndices, Matrix4x4[] transformationMatrices
+        );
+
+        [DllImport("unityOptixPlugin", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void UpdateTransformEnabled
+        (
+            int transformCount, int[] transformIndices, int[] transformEnabled
+        );
+
+        #endregion
+
+        #region Sensor fire
+
+        [DllImport("unityOptixPlugin", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        public static unsafe extern bool SensorFireAndReturnHitPositions
+        (
+            out OptixLibraryInterface optixLibraryHandle, out Vector3* hitPositions, out int hitPositionCount
+        );
+
+        [DllImport("unityOptixPlugin", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool SensorFireAndReturnHitCount
+        (
+            out int hitPositionCount
+        );
+
+        #endregion
+
+        #region Single ray fire
+
+        [DllImport("unityOptixPlugin", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool CheckSingleRayHit
+        (
+            Vector3 origin, Vector3 direction, float depth
+        );
+
+        [DllImport("unityOptixPlugin", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern Vector3 ReturnSingleRayHit
+        (
+            Vector3 origin, Vector3 direction, float depth
+        );
+
+        #endregion
+
+        [DllImport("unityOptixPlugin", ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        public static unsafe extern bool ReleaseItems
+        (
+            IntPtr optixLibraryHandle
+        );
 
         [DllImport("unityOptixPlugin", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr GetRenderEventFunc();
