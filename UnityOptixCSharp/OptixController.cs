@@ -6,7 +6,16 @@ using UnityEngine;
 
 namespace World.Optix
 {
-    // TODO -- Do not regenerate rays if sensor transform has changed. Rather translate them using their localToWorld matrix
+    // TODO SENSORS
+    // Change sensor data structure to not include origin and direction. Origin will be set to 0,0,0 and direction 0,0,1 for all sensors
+    // Add to sensor data structure a translation matrix
+    // Generate the rays using the default values. Multiply the ray origin and ray direction by the translation matrix
+    // OnSensorTransformChanged -> Update single sensor and it's ray that has changed with it's new translation matrix
+    // OnSensorComponentChanged -> Regenerate everything
+
+    // TODO -- Set rays by multiplying their ORIGINAL RAY by the new tranlsation matrix
+
+
     // TODO -- Investigate rendering point cloud within C++ Plugin using D3D11 buffers
     // TODO -- Investigate CUDA implementation
 
@@ -154,7 +163,11 @@ namespace World.Optix
         {
             while (isRaytracing)
             {
-                CheckOptixSensorTranslation();
+                if (!CheckOptixSensorComponentDirty())
+                {
+                    CheckoptixSensorTransformDirty();
+                }
+
                 CheckEnabledStatusChanged();
                 CheckMatrixChanged();
 
@@ -220,16 +233,37 @@ namespace World.Optix
             }
         }
 
-        // Check if any of the sensors have had their transform changed or a value in the optix sensor component changed
-        private void CheckOptixSensorTranslation()
+        private void CheckoptixSensorTransformDirty()
         {
             bool updateSensors = false;
 
             for (int iSensor = 0; iSensor < optixSensors.Length; iSensor++)
             {
-                if (optixSensors[iSensor].IsDirty)
+                if (optixSensors[iSensor].IsTransformDirty)
                 {
-                    optixSensors[iSensor].IsDirty = false; 
+                    optixSensors[iSensor].IsTransformDirty = false;
+                    updateSensors = true;
+                }
+            }
+
+            if (updateSensors)
+            {
+                OptixLibraryInterface.TranslateAllSensorsFromUnity(optixSensors.Length, GetBaseValuesFromSensors(optixSensors));
+                sceneChanged = true;
+            }
+        }
+
+        // Check if any of the sensors have had a value in the optix sensor component changed
+        private bool CheckOptixSensorComponentDirty()
+        {
+            bool updateSensors = false;
+
+            for (int iSensor = 0; iSensor < optixSensors.Length; iSensor++)
+            {
+                if (optixSensors[iSensor].IsComponentDirty)
+                {
+                    optixSensors[iSensor].IsComponentDirty = false;
+                    optixSensors[iSensor].IsTransformDirty = false;
                     updateSensors = true;
                 }
             }
@@ -238,7 +272,10 @@ namespace World.Optix
             {
                 OptixLibraryInterface.SetAllSensorsFromUnity(optixSensors.Length, GetBaseValuesFromSensors(optixSensors));
                 sceneChanged = true;
+                return true;
             }
+
+            return false;
         }
 
         // Checks that a transform is within a certain distance of the optix origin and returns true or false (using ints to make data interop debugging easier)

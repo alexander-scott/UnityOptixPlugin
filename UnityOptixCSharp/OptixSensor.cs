@@ -14,11 +14,13 @@ namespace World.Optix
         [Range(0.001f, 1)]
         public float stride = 0.2f;
 
-        public bool IsDirty
+        public bool IsTransformDirty
         {
             get { return transform.hasChanged; }
             set { transform.hasChanged = value; }
         }
+
+        public bool IsComponentDirty;
 
         public OptixSensorBase OptixSensorBase
         {
@@ -26,13 +28,13 @@ namespace World.Optix
             {
                 return new OptixSensorBase
                 {
-                    sensorPosition = transform.position,
-                    sensorDirection = transform.forward,
+                    localToWorldTranslationMatrix = transform.localToWorldMatrix,
 
                     sensorDepth = sensorDepth,
                     sensorHeight = sensorHeight,
                     sensorRadius = radius,
                     pointGap = stride,
+                    totalPoints = GetTotalPoints()
                 };
             }
         }
@@ -86,9 +88,20 @@ namespace World.Optix
             Gizmos.DrawLine(topRight, botRight);
         }
 
+        private float GetTotalPoints()
+        {
+            float rows = 0;
+            float columns = 0;
+
+            rows += Mathf.Ceil(sensorHeight / stride);
+            columns += Mathf.Ceil(radius / stride);
+
+            return (rows * columns);
+        }
+
         private void OnValidate()
         {
-            IsDirty = true;
+            IsComponentDirty = true;
         }
     }
 }

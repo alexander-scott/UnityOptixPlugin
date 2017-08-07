@@ -43,7 +43,7 @@
 
 #include "OptixPlugin.h"
 
-#include "PlatformBase.h"
+#include "PlatformBase.h" 
 #include "RenderAPI.h"
 
 using namespace optix::prime;
@@ -88,6 +88,12 @@ OPTIXPLUGIN_API void SetAllSensorsFromUnity(int sensorCount, OptixSensorBase* se
 	raysBuffer.free();
 	
 	CreateRaysFromSensorBounds(raysBuffer, sensors, sensorCount);
+	TranslateRays(raysBuffer, sensors, sensorCount);
+}
+
+OPTIXPLUGIN_API void TranslateAllSensorsFromUnity(int sensorCount, OptixSensorBase* sensors)
+{
+	TranslateRays(raysBuffer, sensors, sensorCount);
 }
 
 // Fires rays at every point in a sensors view bounds and then returns the hit position back to Unity
@@ -293,16 +299,14 @@ void CreateInstances(std::vector<RTPmodel>& instances, std::vector<SimpleMatrix4
 // Generates rays across a sensor bounds based on certain parameters such as sensor radius, height and ray gap
 void CreateRaysFromSensorBounds(Buffer<Ray>& raysBuffer, OptixSensorBase* sensors, int sensorCount)
 {
-	float rows = 0;
-	float columns = 0;
+	float totalPoints = 0;
 
 	for (int iSensor = 0; iSensor < sensorCount; iSensor++)
 	{
-		rows += ceilf(sensors[iSensor].sensorHeight / sensors[iSensor].pointGap);
-		columns += ceilf(sensors[iSensor].sensorRadius / sensors[iSensor].pointGap);
+		totalPoints = +sensors[iSensor].totalPoints;
 	}
 
-	raysBuffer.alloc(columns * rows); // Calculate and allocate the number of rays we will be generating
+	raysBuffer.alloc(totalPoints); // Calculate and allocate the number of rays we will be generating
 
 	if (raysBuffer.type() == RTP_BUFFER_TYPE_HOST)
 	{
@@ -317,16 +321,16 @@ void CreateRaysFromSensorBounds(Buffer<Ray>& raysBuffer, OptixSensorBase* sensor
 				for (float iRadius = -sensors[iSensor].sensorRadius / 2; iRadius < sensors[iSensor].sensorRadius / 2; iRadius += sensors[iSensor].pointGap, idx++)
 				{
 					// Calculate the centre point of the sensor bounds based on origin, direction and depth
-					float3 centre = ((sensors[iSensor].sensorPosition + (sensors[iSensor].sensorDirection * sensors[iSensor].sensorDepth)) - sensors[iSensor].sensorPosition);
+					float3 centre = ((make_float3(0,0,0) + (make_float3(0, 0, 1) * sensors[iSensor].sensorDepth)) - make_float3(0, 0, 0));
 
 					// Create a direction vector from origin to the centre + the current height index value
-					float4 targetDir = make_float4((sensors[iSensor].sensorPosition + centre + make_float3(0, iHeight, 0)) - sensors[iSensor].sensorPosition)
+					float4 targetDir = make_float4((make_float3(0, 0, 0) + centre + make_float3(0, iHeight, 0)) - make_float3(0, 0, 0))
 						* optix::Matrix4x4::rotate((iRadius * M_PI) / 180, make_float3(0, 1, 0)); // Multiply this vector by a rotation matrix to rotate the direction by radius index value in the y axis
 
 					// Normalise the value and convert back to a float3 for the Ray structure
 					float3 targetDirection = optix::normalize(make_float3(targetDir));
 
-					Ray r = { sensors[iSensor].sensorPosition, 0.0f, targetDirection, sensors[iSensor].sensorDepth };
+					Ray r = { make_float3(0,0,0), 0.0f, targetDirection, sensors[iSensor].sensorDepth };
 
 					if (idx < raysBuffer.count()) // This avoids an error where idx becomes larger than raysbuffer somehow?!?!?!?
 					{
@@ -339,6 +343,25 @@ void CreateRaysFromSensorBounds(Buffer<Ray>& raysBuffer, OptixSensorBase* sensor
 	else
 	{
 		// CUDA
+	}
+}
+
+void TranslateRays(Buffer<Ray>& raysBuffer, OptixSensorBase* sensors, int sensorCount)
+{
+	int idx = 0;
+	Ray* rays = raysBuffer.ptr();
+
+	for (int iSensor = 0; iSensor < sensorCount; iSensor++)
+	{
+		for (int i = 0; i < sensors[iSensor].totalPoints; i++, idx++)
+		{
+			// Is this the most efficent way to translate the ray?
+			rays[idx].origin.x += sensors[iSensor].localToWorldTranslationMatrix[12];
+			rays[idx].origin.y += sensors[iSensor].localToWorldTranslationMatrix[13];
+			rays[idx].origin.z += sensors[iSensor].localToWorldTranslationMatrix[14];
+
+			rays[idx].dir = make_float3(make_float4(rays[idx].dir) * sensors[iSensor].localToWorldTranslationMatrix);
+		}
 	}
 }
 

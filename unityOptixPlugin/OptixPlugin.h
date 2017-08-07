@@ -14,14 +14,14 @@ using namespace optix::prime;
 class OptixSensorBase
 {
 public:
-	float3 sensorPosition;
-	float3 sensorDirection;
+	optix::Matrix4x4 localToWorldTranslationMatrix;
 
 	float sensorDepth;
 	float sensorHeight;
 	float sensorRadius;
 
 	float pointGap;
+	float totalPoints;
 };
 
 // Optix Variables
@@ -39,10 +39,11 @@ static std::vector<SimpleMatrix4x3> objectTranslationMatrices;
 static std::vector<int> objectEnabledStatus;
 static int totalObjects;
 
+static std::vector<Ray> baseRays;
 static std::vector<SimpleMatrix4x3> sensorTranslationMatrices;
 static Buffer<Ray> raysBuffer(0, bufferType, LOCKED);
 
-// External Optix Functions
+// Init Optix Functions
 // -------------------------------------------------------------------------------------
 
 extern "C" OPTIXPLUGIN_API void SetAllObjectsFromUnity
@@ -54,6 +55,28 @@ extern "C" OPTIXPLUGIN_API void SetAllSensorsFromUnity
 (
 	int sensorCount, OptixSensorBase* sensors
 );
+
+
+// Optix Update Functions
+// -------------------------------------------------------------------------------------
+
+extern "C" OPTIXPLUGIN_API void TranslateAllSensorsFromUnity
+(
+	int sensorCount, OptixSensorBase* sensors
+);
+
+extern "C" OPTIXPLUGIN_API void UpdateMatrices
+(
+	int matrixCount, int* matrixIndex, optix::Matrix4x4* transformationMatrices
+);
+
+extern "C" OPTIXPLUGIN_API void UpdateTransformEnabled
+(
+	int transformCount, int* transformIndices, int* transformsEnabled
+);
+
+// Optix Execute Functions
+// -------------------------------------------------------------------------------------
 
 extern "C" OPTIXPLUGIN_API bool SensorFireAndReturnHitPositions
 (
@@ -75,15 +98,8 @@ extern "C" OPTIXPLUGIN_API float3 ReturnSingleRayHit
 	float3 origin, float3 direction, float depth
 );
 
-extern "C" OPTIXPLUGIN_API void UpdateMatrices
-(
-	int matrixCount, int* matrixIndex, optix::Matrix4x4* transformationMatrices
-);
-
-extern "C" OPTIXPLUGIN_API void UpdateTransformEnabled
-(
-	int transformCount, int* transformIndices, int* transformsEnabled
-);
+// Optix Cleanup Functions
+// -------------------------------------------------------------------------------------
 
 extern "C" OPTIXPLUGIN_API bool ReleaseItems(ItemListHandle hItems);
 
@@ -96,6 +112,11 @@ void CreateInstances
 );
 
 void CreateRaysFromSensorBounds
+(
+	Buffer<Ray>& raysBuffer, OptixSensorBase* sensors, int sensorCount
+);
+
+void TranslateRays
 (
 	Buffer<Ray>& raysBuffer, OptixSensorBase* sensors, int sensorCount
 );

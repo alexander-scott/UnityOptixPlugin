@@ -8,8 +8,7 @@ namespace World.Optix
     {
         #region Vars
 
-        public Button sensorFire;
-        public OptixSensor[] sensors;
+        public Button sensorTriggerButton;
 
         [Space(10)]
         [Header("Optix Config")]
@@ -37,6 +36,7 @@ namespace World.Optix
         [Tooltip("The colour of each point in the point cloud.")]
         public Color pointCloudPointColour;
 
+        private OptixSensor[] sensors;
         private OptixPointCloud optixPointCloud;
         private OptixController optixController;
 
@@ -44,13 +44,16 @@ namespace World.Optix
 
         private void Start()
         {
+            // Cache all Optix Sensors in the scene 
+            sensors = FindObjectsOfType<OptixSensor>();
+
             optixController = gameObject.AddComponent<OptixController>();
             optixController.Init(optixTargetFPS, optixTargetLayerMask, optixTargetTag, optixOrigin, optixMaxDistanceFromOrigin);
 
             optixPointCloud = gameObject.AddComponent<OptixPointCloud>();
             optixPointCloud.Init(instanceMesh, instanceMaterial, pointCloudPointColour, pointCloudPointSize);
 
-            sensorFire.onClick.AddListener(ButtonClick);
+            sensorTriggerButton.onClick.AddListener(ButtonClick);
         }
 
         private void ButtonClick()

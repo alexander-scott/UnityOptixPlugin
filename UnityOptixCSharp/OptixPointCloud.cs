@@ -69,6 +69,9 @@ namespace World.Optix
             argsBuffer.SetData(args);
         }
 
+        /// <summary>
+        /// Instruct the point cloud to start the render loop
+        /// </summary>
         public void StartRendering()
         {
             instanceCount = 0;
@@ -76,6 +79,9 @@ namespace World.Optix
             StartCoroutine(RenderPointCloudCoroutine());
         }
 
+        /// <summary>
+        /// End the point cloud render loop and release the buffers
+        /// </summary>
         public void StopRendering()
         {
             if (positionBuffer != null) positionBuffer.Release();
@@ -108,7 +114,6 @@ namespace World.Optix
             StopRendering();
         }
 
-        // Release the compute buffers in the point cloud
         private void OnApplicationQuit()
         {
             StopRendering();

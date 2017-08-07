@@ -8,14 +8,14 @@ namespace World.Optix
 {
     public struct OptixSensorBase
     {
-        public Vector3 sensorPosition;
-        public Vector3 sensorDirection;
+        public Matrix4x4 localToWorldTranslationMatrix;
 
         public float sensorDepth;
         public float sensorHeight;
         public float sensorRadius;
 
         public float pointGap;
+        public float totalPoints;
     }
 
     /// <summary>
@@ -23,7 +23,7 @@ namespace World.Optix
     /// </summary>
     public class OptixLibraryInterface : SafeHandleZeroOrMinusOneIsInvalid
     {
-        #region Set data in plugin
+        #region Init Optix Functions
 
         [DllImport("unityOptixPlugin", CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetAllObjectsFromUnity
@@ -33,6 +33,16 @@ namespace World.Optix
 
         [DllImport("unityOptixPlugin", CallingConvention = CallingConvention.Cdecl)]
         public static extern void SetAllSensorsFromUnity
+        (
+            int totalSensors, OptixSensorBase[] sensors
+        );
+
+        #endregion
+
+        #region Update Optix Functions
+
+        [DllImport("unityOptixPlugin", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void TranslateAllSensorsFromUnity
         (
             int totalSensors, OptixSensorBase[] sensors
         );
