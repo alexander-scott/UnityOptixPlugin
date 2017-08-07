@@ -54,7 +54,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CarController.cs" />
+    <Compile Include="OptixExampleUsage.cs" />
     <Compile Include="OptixController.cs" />
     <Compile Include="OptixLibraryInterface.cs" />
     <Compile Include="OptixPointCloud.cs" />

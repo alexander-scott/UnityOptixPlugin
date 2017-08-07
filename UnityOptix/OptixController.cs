@@ -29,61 +29,46 @@ namespace World.Optix
     /// <summary>
     /// Controller that allows you to modify settings and control Optix execution
     /// </summary>
+    [AddComponentMenu("")]
     public class OptixController : MonoBehaviour
     {
         #region Vars
 
-        [Header("Optix Config")]
-
-        [Tooltip("Change the frequency that the ray tracing execution will occur. 60 FPS will mean it happens every frame, providing something has changed within the scene to warrant the execution.")]
-        public float optixTargetFPS;
-        [Tooltip("Set the layer mask that will be applied at initalisation when searching the scene for valid gameobjects. Gameobjects that are not within the set layermask will not be included in Optix.")]
-        public LayerMask optixTargetLayerMask;
-        [Tooltip("Set the tag that all gameobjects will be compared to at initalisation when searching the scene for valid gameobjects. Gameobjects that do not have the set tag will not be included in Optix. Leave blank to allow all tags.")]
-        public string optixTargetTag;
-        [Tooltip("Set the transform/position of the centre of the scene. Use in conjunction with the below variable to declude objects that are too far away from the origin.")]
-        public Transform optixOrigin;
-        [Tooltip("Set the maximum distance that an object can be to be included in Optix. Use in conjunction with the above variable to declude objects that are too far away from the origin.")]
-        public float optixMaxDistanceFromOrigin;
-
-        [Space(10)]
-        [Header("Point Cloud Config")]
-
-        [Tooltip("A reference to the mesh that will be instanced by the shader which will represent each individual point cloud point.")]
-        public Mesh instanceMesh;
-        [Tooltip("A reference to the material that contains the instance shader which will render the point cloud.")]
-        public Material instanceMaterial;
-        [Tooltip("The size of each point in the point cloud.")]
-        public float pointCloudPointSize = 0.05f;
-        [Tooltip("The colour of each point in the point cloud.")]
-        public Color pointCloudPointColor;
-
-        private OptixPointCloud optixPointCloud;
         private OptixTransform[] optixTransforms;
         private OptixSensor[] optixSensors;
 
         private bool isRaytracing;
         private bool sceneChanged;
 
+        private float _optixTargetFPS;
+        private LayerMask _optixTargetLayerMask;
+        private string _optixTargetTag;
+        private Transform _optixOrigin;
+        private float _optixMaxDistanceFromOrigin;
+
         #endregion
 
         #region Init
 
-        private void Start()
+        public void Init(float optixTargetFPS, LayerMask optixTargetLayerMask, string optixTargetTag, Transform optixOrigin, float optixMaxDistanceFromOrigin)
         {
+            _optixTargetFPS = optixTargetFPS;
+            _optixTargetLayerMask = optixTargetLayerMask;
+            _optixTargetTag = optixTargetTag;
+            _optixOrigin = optixOrigin;
+            _optixMaxDistanceFromOrigin = optixMaxDistanceFromOrigin;
+
             CacheAllObjects();
 
             if (optixTransforms.Length == 0)
             {
-                Debug.LogWarning("No gameobjects found. Cancelling");
+                Debug.LogWarning("No gameobjects found in scene. Ending OptixController execution.");
                 return;
             }
 
             SendAllObjectsToOptix();
 
             StartCoroutine(CallPluginAtEndOfFrames());
-
-            optixPointCloud = new OptixPointCloud(instanceMesh, instanceMaterial, this);
         }
 
         // Finds and caches all gameobjects in the scene which have a MeshFilter attached to them. TODO: Selectively cache gameobjects based on layer or tag or component.
@@ -110,12 +95,12 @@ namespace World.Optix
         // Checks to see if the gameobjects found by FindObjectsOfType adhere to the specified requirements such as layermask and tag
         private bool CheckGameObjectMeetsRequirements(GameObject gameObject)
         {
-            if (optixTargetLayerMask != (optixTargetLayerMask | (1 << gameObject.layer))) // Checks to see if this gameobject is outside of the specified layermask
+            if (_optixTargetLayerMask != (_optixTargetLayerMask | (1 << gameObject.layer))) // Checks to see if this gameobject is outside of the specified layermask
             {
                 return false;
             }
 
-            if (!string.IsNullOrEmpty(optixTargetTag) && !gameObject.CompareTag(optixTargetTag)) // Checks to see if this gameobject doesn't have the specified tag
+            if (!string.IsNullOrEmpty(_optixTargetTag) && !gameObject.CompareTag(_optixTargetTag)) // Checks to see if this gameobject doesn't have the specified tag
             {
                 return false;
             }
@@ -153,25 +138,19 @@ namespace World.Optix
 
             OptixLibraryInterface.SetAllObjectsFromUnity(optixTransforms.Length, meshVertexCounts, meshVertexAddresses, meshTranslationMatrices, meshEnabledStatus);
 
-            for (int iGCHandle = 0; iGCHandle < meshGCHandles.Length; iGCHandle++) // Free the GCHandles as we no longer have a use for them
+            for (int iGCHandle = 0; iGCHandle < meshGCHandles.Length; iGCHandle++) // Free the GCHandles as we no longer want the GC to avoid removing our verts
             {
                 meshGCHandles[iGCHandle].Free();
             }
         }
 
-        // Release the compute buffers in the point cloud
-        private void OnApplicationQuit()
-        {
-            if (optixPointCloud != null)
-                optixPointCloud.StopRendering();
-        }
 
         #endregion
 
         #region Update
 
         // Update loop that is used by continous executions such as raytracing with point cloud rendering. Deals with updating transform matrices, distance culling and point cloud updating, all at a user-defined frame rate
-        private IEnumerator RaytracingCoroutine()
+        private IEnumerator RaytracingCoroutine(OptixPointCloud optixPointCloud)
         {
             while (isRaytracing)
             {
@@ -182,29 +161,14 @@ namespace World.Optix
                 if (sceneChanged)
                 {
                     sceneChanged = false;
-                    FireSensorAndUpdatePointCloud();
+                    FireSensorAndUpdatePointCloud(optixPointCloud);
                 }
 
-                if (optixTargetFPS == 0) // Prevents dividing by 0 error
+                if (_optixTargetFPS == 0) // Prevents dividing by 0 error
                     yield return null;
                 else
-                    yield return new WaitForSeconds(1 / optixTargetFPS);
+                    yield return new WaitForSeconds(1 / _optixTargetFPS);
             }
-        }
-
-        // Loop that deals with rendering the point cloud. This must happen every frame because if it doesn't then one frame the point cloud won't get rendered and it will look all jittery
-        private IEnumerator RenderPointCloudCoroutine()
-        {
-            optixPointCloud.StartRendering();
-
-            while (isRaytracing)
-            {
-                optixPointCloud.Update();
-
-                yield return null;
-            }
-
-            optixPointCloud.StopRendering();
         }
 
         // Check if a transforms enabled status has changed and if it has update it in Optix
@@ -280,12 +244,12 @@ namespace World.Optix
         // Checks that a transform is within a certain distance of the optix origin and returns true or false (using ints to make data interop debugging easier)
         private int CheckIfTransformIsEnabled(Transform transform)
         {
-            if (optixOrigin == null)
+            if (_optixOrigin == null)
             {
                 return 1;
             }
 
-            if (Vector3.Distance(transform.position, optixOrigin.position) < optixMaxDistanceFromOrigin)
+            if (Vector3.Distance(transform.position, _optixOrigin.position) < _optixMaxDistanceFromOrigin)
             {
                 return 1;
             }
@@ -375,24 +339,11 @@ namespace World.Optix
         /// <summary>
         /// Renders the hit positions from single/multiple optix sensors into a point cloud. Runs continually until stopped by EndRaytracing().
         /// </summary>
-        public void RenderPointCloudFromHitPositionsContinuous(OptixSensor[] optixSensors)
+        public void RenderPointCloudFromSensorsContinuous(OptixSensor[] optixSensors, OptixPointCloud optixPointCloud)
         {
             this.optixSensors = optixSensors;
-            OptixLibraryInterface.SetAllSensorsFromUnity(optixSensors.Length, GetBaseValuesFromSensors(optixSensors)); 
+            OptixLibraryInterface.SetAllSensorsFromUnity(optixSensors.Length, GetBaseValuesFromSensors(optixSensors));
 
-            StartRaytracing();
-        }
-
-        /// <summary>
-        /// Stops any continuous processes
-        /// </summary>
-        public void EndRaytracing()
-        {
-            isRaytracing = false;
-        }
-
-        private void StartRaytracing()
-        {
             if (isRaytracing)
             {
                 Debug.LogWarning("Attempting to start raytracing even though it is already executing.");
@@ -407,22 +358,31 @@ namespace World.Optix
 
             isRaytracing = true;
 
-            StartCoroutine(RenderPointCloudCoroutine());
-            StartCoroutine(RaytracingCoroutine());
+            StartCoroutine(RaytracingCoroutine(optixPointCloud));
         }
 
-        private unsafe void FireSensorAndUpdatePointCloud()
+        /// <summary>
+        /// Stops any continuous processes
+        /// </summary>
+        public void EndRaytracing()
+        {
+            isRaytracing = false;
+        }
+
+        private unsafe void FireSensorAndUpdatePointCloud(OptixPointCloud optixPointCloud)
         {
             Vector3* returnHitPositions;
             int returnHitPositionCount;
+            
             using (OptixLibraryInterface.SensorFireAndReturnHitPositions(out returnHitPositions, out returnHitPositionCount))
             {
                 optixPointCloud.UpdatePositions(returnHitPositions, returnHitPositionCount);
             }
         }
-#endregion
 
-#region Helpers
+        #endregion
+
+        #region Helpers
 
         private OptixSensorBase[] GetBaseValuesFromSensors(OptixSensor[] sensors)
         {
@@ -436,7 +396,7 @@ namespace World.Optix
             return baseSensors;
         }
 
-#endregion
+        #endregion
 
         private IEnumerator CallPluginAtEndOfFrames()
         {
@@ -455,6 +415,5 @@ namespace World.Optix
                 GL.IssuePluginEvent(OptixLibraryInterface.GetRenderEventFunc(), 1);
             }
         }
-
     }
 }

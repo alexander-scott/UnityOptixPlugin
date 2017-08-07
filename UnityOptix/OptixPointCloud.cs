@@ -1,12 +1,16 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 namespace World.Optix
 {
     /// <summary>
     /// Renders an array of positions to a point cloud using the low-level function, Graphics.DrawMeshInstancedIndirect().
     /// </summary>
-    public class OptixPointCloud
+    [AddComponentMenu("")]
+    public class OptixPointCloud : MonoBehaviour
     {
+        #region Vars
+
         private int instanceCount = -1;
         private ComputeBuffer positionBuffer;
         private ComputeBuffer argsBuffer;
@@ -15,23 +19,17 @@ namespace World.Optix
 
         private Mesh _instancedMesh;
         private Material _instancedMaterial;
-        private OptixController _optixController;
+        private Color _pointCloudPointColour;
+        private float _pointCloudPointSize;
 
-        public OptixPointCloud(Mesh instancedMesh, Material instancedMaterial, OptixController optixController)
+        #endregion
+
+        public void Init(Mesh instancedMesh, Material instancedMaterial, Color pointCloudPointColour, float pointCloudPointSize)
         {
             _instancedMesh = instancedMesh;
             _instancedMaterial = instancedMaterial;
-
-            _optixController = optixController;
-        }
-
-        public void Update()
-        {
-            if (instanceCount <= 0 || argsBuffer == null)
-                return;
-
-            // Render
-            Graphics.DrawMeshInstancedIndirect(_instancedMesh, 0, _instancedMaterial, new Bounds(Vector3.zero, new Vector3(1000.0f, 1000.0f, 1000.0f)), argsBuffer, 0, null, UnityEngine.Rendering.ShadowCastingMode.Off, false, 9);
+            _pointCloudPointColour = pointCloudPointColour;
+            _pointCloudPointSize = pointCloudPointSize;
         }
 
         /// <summary>
@@ -55,24 +53,27 @@ namespace World.Optix
 
             for (int iPositionData = 0; iPositionData < positionDataCount; iPositionData++)
             { 
-                positions[iPositionData] = new Vector4(positionData[iPositionData].x, positionData[iPositionData].y, positionData[iPositionData].z, _optixController.pointCloudPointSize);
+                positions[iPositionData] = new Vector4(positionData[iPositionData].x, positionData[iPositionData].y, positionData[iPositionData].z, _pointCloudPointSize);
             }
 
             positionBuffer.SetData(positions);
 
             _instancedMaterial.SetBuffer("positionBuffer", positionBuffer);
-            _instancedMaterial.SetColor("_PointColor", _optixController.pointCloudPointColor);
+            _instancedMaterial.SetColor("_PointColor", _pointCloudPointColour);
 
             // indirect args
             uint numIndices = (_instancedMesh != null) ? (uint)_instancedMesh.GetIndexCount(0) : 0;
             args[0] = numIndices;
             args[1] = (uint)instanceCount;
+
             argsBuffer.SetData(args);
         }
 
         public void StartRendering()
         {
+            instanceCount = 0;
             argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
+            StartCoroutine(RenderPointCloudCoroutine());
         }
 
         public void StopRendering()
@@ -84,6 +85,33 @@ namespace World.Optix
             argsBuffer = null;
 
             instanceCount = -1;
+        }
+
+        private bool Update()
+        {
+            if (instanceCount < 0 || argsBuffer == null)
+                return false;
+
+            // Render
+            Graphics.DrawMeshInstancedIndirect(_instancedMesh, 0, _instancedMaterial, new Bounds(Vector3.zero, new Vector3(1000.0f, 1000.0f, 1000.0f)), argsBuffer, 0, null, UnityEngine.Rendering.ShadowCastingMode.Off, false, 9);
+            return true;
+        }
+
+        // Loop that deals with rendering the point cloud. This must happen every frame because if it doesn't then one frame the point cloud won't get rendered and it will look all jittery
+        private IEnumerator RenderPointCloudCoroutine()
+        {
+            while (Update())
+            {
+                yield return null;
+            }
+
+            StopRendering();
+        }
+
+        // Release the compute buffers in the point cloud
+        private void OnApplicationQuit()
+        {
+            StopRendering();
         }
     }
 }
