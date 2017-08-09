@@ -26,14 +26,14 @@ Requirements:
 Compilation instructions:
 Requirements:
 - Visual Studio 2015 with C++ compiler.
-- NVIDIA GPU.
 - CMake 3.0 or greater.
 - NVIDIA Optix 4.1 or greater.
 - CUDA Toolkit 5.0 or greater.
 
-1. Copy the UnityOptixPlugin folder in this folder to the C:\ProgramData\NVIDIA Corporation\OptiX SDK <version>\SDK directory.
+1. Copy the UnityOptixPlugin folder to the C:\ProgramData\NVIDIA Corporation\OptiX SDK <version>\SDK directory.
 
-2. Copy the CMakeLists.txt file in this folder to the C:\ProgramData\NVIDIA Corporation\OptiX SDK <version>\SDK directory and overwrite the file there.
+2. Copy the CMakeLists.txt (root one not the one in the UnityOptixPlugin folder) file to the 
+   C:\ProgramData\NVIDIA Corporation\OptiX SDK <version>\SDK directory and overwrite the file there.
 
 3. Start up cmake-gui from the Start Menu.
 
@@ -69,7 +69,3 @@ to .dll. Change the output directory to the plugins directory of your Unity proj
 12. Repeat step 12 for the sutil_sdk project.
 
 13. Build the solution again and you should be error free.
-
-14. This plugin uses the Optix Prime library. Unity needs to know about this library for it to work in the Editor and in standalone builds. Copy 
-the "optix_prime.1.dll" from the SDK-precompiled-samples folder to the plugins folder in your Unity project. 
-

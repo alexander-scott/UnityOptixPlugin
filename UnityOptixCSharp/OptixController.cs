@@ -204,7 +204,7 @@ namespace World.Optix
 
             if (updateTransformEnabled.Count > 0)
             {
-                OptixLibraryInterface.UpdateTransformEnabled(updateTransformEnabled.Count, updateIndices.ToArray(), updateTransformEnabled.ToArray());
+                OptixLibraryInterface.UpdateGameObjectEnabledFromUnity(updateTransformEnabled.Count, updateIndices.ToArray(), updateTransformEnabled.ToArray());
                 sceneChanged = true;
             }  
         }
@@ -228,7 +228,7 @@ namespace World.Optix
 
             if (updateMatricies.Count > 0)  // If no enabled status' have changed, just update the matrices
             {
-                OptixLibraryInterface.UpdateMatrices(updateMatricies.Count, updateIndices.ToArray(), updateMatricies.ToArray());
+                OptixLibraryInterface.UpdateGameObjectMatrixFromUnity(updateMatricies.Count, updateIndices.ToArray(), updateMatricies.ToArray());
                 sceneChanged = true;
             }
         }

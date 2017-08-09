@@ -15,6 +15,8 @@ namespace World.Optix
         private ComputeBuffer positionBuffer;
         private ComputeBuffer argsBuffer;
 
+        private bool rendering;
+
         private uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
 
         private Mesh _instancedMesh;
@@ -41,7 +43,7 @@ namespace World.Optix
         {
             instanceCount = positionDataCount;
 
-            if (instanceCount == 0)
+            if (instanceCount <= 0)
                 return; // Do not attempt to update buffers if there is no data to update them with. Prevents error.
 
             if (positionBuffer != null)
@@ -74,7 +76,7 @@ namespace World.Optix
         /// </summary>
         public void StartRendering()
         {
-            instanceCount = 0;
+            rendering = true;
             argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
             StartCoroutine(RenderPointCloudCoroutine());
         }
@@ -84,6 +86,8 @@ namespace World.Optix
         /// </summary>
         public void StopRendering()
         {
+            rendering = false;
+
             if (positionBuffer != null) positionBuffer.Release();
             positionBuffer = null;
 
@@ -93,25 +97,23 @@ namespace World.Optix
             instanceCount = -1;
         }
 
-        private bool Update()
+        private void Update()
         {
-            if (instanceCount < 0 || argsBuffer == null)
-                return false;
+            if (instanceCount <= 0 || argsBuffer == null)
+                return;
 
             // Render
             Graphics.DrawMeshInstancedIndirect(_instancedMesh, 0, _instancedMaterial, new Bounds(Vector3.zero, new Vector3(1000.0f, 1000.0f, 1000.0f)), argsBuffer, 0, null, UnityEngine.Rendering.ShadowCastingMode.Off, false, 9);
-            return true;
         }
 
         // Loop that deals with rendering the point cloud. This must happen every frame because if it doesn't then one frame the point cloud won't get rendered and it will look all jittery
         private IEnumerator RenderPointCloudCoroutine()
         {
-            while (Update())
+            while (rendering)
             {
+                Update();
                 yield return null;
             }
-
-            StopRendering();
         }
 
         private void OnApplicationQuit()

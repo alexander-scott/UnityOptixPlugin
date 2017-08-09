@@ -48,13 +48,13 @@ namespace World.Optix
         );
 
         [DllImport("unityOptixPlugin", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void UpdateMatrices
+        public static extern void UpdateGameObjectMatrixFromUnity
         (
             int matrixCount, int[] matrixIndices, Matrix4x4[] transformationMatrices
         );
 
         [DllImport("unityOptixPlugin", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void UpdateTransformEnabled
+        public static extern void UpdateGameObjectEnabledFromUnity
         (
             int transformCount, int[] transformIndices, int[] transformEnabled
         );
