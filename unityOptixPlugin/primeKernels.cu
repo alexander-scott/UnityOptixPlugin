@@ -28,7 +28,21 @@
 
 #include <cuda_runtime.h>
 #include <optixu/optixu_math_namespace.h>
+#include <optixu/optixu_matrix_namespace.h> 
 #include <stdio.h>
+
+class OptixSensorBase
+{
+public:
+	optix::Matrix4x4 localToWorldTranslationMatrix;
+
+	float sensorDepth;
+	float sensorHeight;
+	float sensorRadius;
+
+	float pointGap;
+	float totalPoints;
+};
 
 //------------------------------------------------------------------------------
 // Return ceil(x/y) for integers x and y
@@ -107,4 +121,36 @@ extern "C" void translateRaysOnDevice(float4* rays, size_t count, float3 offset)
   int blockSize = 512;
   int blockCount = idivCeil((int)count, blockSize);
   translateRaysKernel<<<blockCount,blockSize>>>( rays, (int)count, offset );
+}
+
+__global__ void GenerateRaysKernel(float4* rays, OptixSensorBase sensor, int startIndex)
+{
+	int idx = startIndex + (threadIdx.x + blockIdx.x*blockDim.x);
+
+	// For every row and column within the sensor bounds
+	for (float iHeight = sensor.sensorHeight / 2; iHeight > -sensor.sensorHeight / 2; iHeight -= sensor.pointGap)
+	{
+		for (float iRadius = -sensor.sensorRadius / 2; iRadius < sensor.sensorRadius / 2; iRadius += sensor.pointGap, idx++)
+		{
+			// Calculate the centre point of the sensor bounds based on origin, direction and depth
+			float3 centre = ((make_float3(0, 0, 1) * sensor.sensorDepth));
+
+			// Create a direction vector from origin to the centre + the current height index value
+			float4 targetDir = make_float4(centre + make_float3(0, iHeight, 0))
+				* optix::Matrix4x4::rotate((iRadius * M_PI) / 180, make_float3(0, 1, 0)); // Multiply this vector by a rotation matrix to rotate the direction by radius index value in the y axis
+
+																						  // Normalise the value and convert back to a float3 for the Ray structure
+			float3 targetDirection = optix::normalize(make_float3(targetDir));
+
+			rays[2 * idx + 0] = make_float4(0, 0, 0, 0.0f); // origin, tmin
+			rays[2 * idx + 1] = make_float4(targetDirection.x, targetDirection.y, targetDirection.z, sensor.sensorDepth); // dir, tmax
+		}
+	}
+}
+
+extern "C" void GenerateRaysOnDevice(float4* rays, OptixSensorBase sensor, int startIndex)
+{
+	int blockSize = 512;
+	int blockCount = idivCeil((int)sensor.totalPoints, blockSize);
+	GenerateRaysKernel<<<blockCount,blockSize>>>(rays, sensor, startIndex);
 }

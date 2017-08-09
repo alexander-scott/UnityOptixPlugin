@@ -25,6 +25,11 @@ public:
 	float totalPoints;
 };
 
+extern "C"
+{
+	void GenerateRaysOnDevice(float4* rays, OptixSensorBase sensor, int startIndex);
+}
+
 // -------------------------------------------------------------------------------------
 // Optix Variables
 // -------------------------------------------------------------------------------------

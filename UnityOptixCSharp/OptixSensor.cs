@@ -20,7 +20,7 @@ namespace World.Optix
             set { transform.hasChanged = value; }
         }
 
-        public bool IsComponentDirty;
+        public bool IsComponentDirty { get; set; }
 
         public OptixSensorBase OptixSensorBase
         {

@@ -6,16 +6,6 @@ using UnityEngine;
 
 namespace World.Optix
 {
-    // TODO SENSORS
-    // Change sensor data structure to not include origin and direction. Origin will be set to 0,0,0 and direction 0,0,1 for all sensors
-    // Add to sensor data structure a translation matrix
-    // Generate the rays using the default values. Multiply the ray origin and ray direction by the translation matrix
-    // OnSensorTransformChanged -> Update single sensor and it's ray that has changed with it's new translation matrix
-    // OnSensorComponentChanged -> Regenerate everything
-
-    // TODO -- Set rays by multiplying their ORIGINAL RAY by the new tranlsation matrix
-
-
     // TODO -- Investigate rendering point cloud within C++ Plugin using D3D11 buffers
     // TODO -- Investigate CUDA implementation
 
@@ -147,7 +137,8 @@ namespace World.Optix
 
             OptixLibraryInterface.SetAllObjectsFromUnity(optixTransforms.Length, meshVertexCounts, meshVertexAddresses, meshTranslationMatrices, meshEnabledStatus);
 
-            for (int iGCHandle = 0; iGCHandle < meshGCHandles.Length; iGCHandle++) // Free the GCHandles as we no longer want the GC to avoid removing our verts
+            // Free the GCHandles as we no longer want the GC to avoid removing our verts
+            for (int iGCHandle = 0; iGCHandle < meshGCHandles.Length; iGCHandle++) 
             {
                 meshGCHandles[iGCHandle].Free();
             }
@@ -165,7 +156,7 @@ namespace World.Optix
             {
                 if (!CheckOptixSensorComponentDirty())
                 {
-                    CheckoptixSensorTransformDirty();
+                    CheckOptixSensorTransformDirty();
                 }
 
                 CheckEnabledStatusChanged();
@@ -233,7 +224,7 @@ namespace World.Optix
             }
         }
 
-        private void CheckoptixSensorTransformDirty()
+        private void CheckOptixSensorTransformDirty()
         {
             bool updateSensors = false;
 

@@ -120,10 +120,12 @@ namespace World.Optix
         public static unsafe OptixLibraryInterface SensorFireAndReturnHitPositions(out Vector3* hitPositions, out int hitPositionCount)
         {
             OptixLibraryInterface optixLibraryHandle;
+
             if (!SensorFireAndReturnHitPositions(out optixLibraryHandle, out hitPositions, out hitPositionCount))
             {
                 throw new InvalidOperationException();
             }
+
             return optixLibraryHandle;
         }
     }
